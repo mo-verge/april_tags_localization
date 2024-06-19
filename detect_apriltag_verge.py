@@ -17,13 +17,6 @@ def low_pass(x_new, y_old, cutoff=0.1):
 
 yfilt_old = 0
 def plotCamera3D(Cesc, rvec, ax=None):
-    global yfilt_old
-    if ax is None:
-        ax = ppl.axes(projection='3d')
-    yraw = math.sqrt(pow(Cesc[0],2)+ pow(Cesc[1],2)+ pow(Cesc[2],2))
-    yfilt = low_pass(yraw, yfilt_old )
-    yfilt_old = yfilt
-    print(yraw, yfilt)
     point = ax.scatter3D(Cesc[0], Cesc[1], Cesc[2], 'k', c='red')
     R, _ = cv2.Rodrigues(rvec)
 
@@ -58,14 +51,16 @@ def getCamera3D(rvec, tvec):
 
 
 npz_file = "calibration.npz"
-tagsize = 45.5
+tagsize = 45.3
 family = "tagStandard52h13"
 camera = 0
 ids = [7, 57]
-objectPoints = {7:np.array([[0., 0., 0.], [tagsize, 0., 0.], [tagsize, tagsize, 0.], [0., tagsize, 0.]]),
-                57:np.array(
-                    [[150.0, 0., 0.], [150.0 + tagsize, 0., 0.], [150.0 + tagsize, tagsize, 0,],
-                     [150.0, tagsize, 0]])}
+# objectPoints = {7:np.array([[0., 0., 0.], [tagsize, 0., 0.], [tagsize, tagsize, 0.], [0., tagsize, 0.]]),
+                # 57:np.array(
+                    # [[150.0, 0., 0.], [150.0 + tagsize, 0., 0.], [150.0 + tagsize, tagsize, 0,],
+                     # [150.0, tagsize, 0]])}
+objectPoints = {7:np.array([ [0., tagsize, 0.], [tagsize, tagsize, 0.], [tagsize, 0., 0.], [0., 0., 0.]]),
+                57:np.array([ [0., tagsize, 0.], [tagsize, tagsize, 0.], [tagsize, 0., 0.], [0., 0., 0.]])}
 
 with np.load(npz_file) as data:
     intrinsics = data['intrinsics']
@@ -93,6 +88,7 @@ for tagID, objectPoint in objectPoints.items():
 
 camera_points = []
 
+# vs.set(cv2.CAP_PROP_FOURCC, -1)
 vs.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
 vs.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
 vs.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
@@ -107,6 +103,7 @@ while vs.isOpened():
     coord_fusion = []
     angle_fusion = []
     areas = []
+    cameras = {}
     for r in results:
         # extract the bounding box (x, y)-coordinates for the AprilTag
         # and convert each of the (x, y)-coordinate pairs to integers
@@ -135,47 +132,24 @@ while vs.isOpened():
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         _, rotation, translation = cv2.solvePnP(objectPoints[r.tag_id], imagePoints, intrinsics, dist_coeffs)
+        # M = np.empty((4, 4))
+        # M[:3, :3] = rotation
+        # M[:3, 3] = [translation[0][0], translation[1][0], translation[2][0]]
+        # M[3, :] = [0, 0, 0, 1]
+        # cameras[r.tag_id] = np.matmul(M, [0,0,0,1])
+        cameras[r.tag_id] = [t[0] for t in translation]
 
-
-        camera = getCamera3D(rotation, translation)
-        coord_fusion.append(camera)
-        angle_fusion.append(rotation)
-
-    if len(results) > 0:
-        total_weight = np.sum(areas)
-        ratio = []
-        for area in areas:
-            ratio.append(area / total_weight)
-        ratio = np.array(ratio)
-        coord_fusion = np.array(coord_fusion)
-        angle_fusion = np.array(angle_fusion)
-        camera = np.array([0, 0, 0])
-        sin_angle = np.array([0, 0, 0])
-        cos_angle = np.array([0, 0, 0])
-        for i in range(len(ratio)):
-            camera = camera + (coord_fusion[i] * ratio[i])
-            sin_angle = sin_angle + (np.sin(angle_fusion[i]).reshape(3) * ratio[i])
-            cos_angle = cos_angle + (np.cos(angle_fusion[i]).reshape(3) * ratio[i])
-        angle = np.arctan(sin_angle / cos_angle)
-        angle[0] = angle[0] - np.pi
-        lines, camera_point = plotCamera3D(camera, angle, axes)
-        camera_points.append(camera_point)
-
-    ppl.pause(0.0000000001)
-
-
-    for line in axes.lines:
-        line.remove()
-    del lines
-
-    if len(camera_points) > 15:
-        camera_points[0].remove()
-        camera_points = camera_points[1:]
+    if len(cameras.keys()) == 2:
+        x1,y1,z1 = cameras[7]
+        x2,y2,z2 = cameras[57]
+        yraw = math.sqrt(pow((x2 - x1),2)+ pow((y2-y1),2)+ pow((z2-z1),2))
+        yfilt = low_pass(yraw, yfilt_old )
+        yfilt_old = yfilt
+        print(f"{yfilt:.2f}, {yraw:.2f}")
 
     cv2.imshow("camera", image)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-ppl.show()
 vs.release()
 cv2.destroyAllWindows()

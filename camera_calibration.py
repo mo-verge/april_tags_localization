@@ -31,19 +31,18 @@ def get_chessboard_points(chessboard_shape, dx, dy):
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--folder", required=True, help="path to where the calibration images are located")
-ap.add_argument("--pshape", required=True, nargs='+', type=int, help="number of inner corners per a chessboard row "
-                                                                     "and column")
 ap.add_argument("--psize", required=True, type=float, help="size of the chessboard squares")
 args = vars(ap.parse_args())
 
 folder = args['folder']
 path = os.path.join(folder, '*')
-row, col = args['pshape']
+row = 19
+col =12
 psize = args['psize']
 
 imgs, names = load_images(sorted(glob.glob(path)))
 
-corners = [cv2.findChessboardCorners(image, (row, col)) for image in imgs]
+corners = [cv2.findChessboardCorners(cv2.cvtColor(image,cv2.COLOR_RGB2GRAY), (row, col)) for image in imgs]
 # cornerSubPix is destructive. so we copy standard corners and use the new list to refine
 corners2 = copy.deepcopy(corners)
 

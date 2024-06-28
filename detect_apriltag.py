@@ -58,7 +58,7 @@ def getCamera3D(rvec, tvec):
 
 
 npz_file = "calibration.npz"
-tagsize = 45.5
+tagsize = 75
 family = "tagStandard52h13"
 camera = 0
 ids = [7, 57]
@@ -71,7 +71,7 @@ with np.load(npz_file) as data:
     intrinsics = data['intrinsics']
     dist_coeffs = data['dist_coeffs']
 
-vs = cv2.VideoCapture(camera)
+vs = cv2.VideoCapture(camera, cv2.CAP_DSHOW)
 detector = apriltag.Detector(families=family)
 fig = ppl.figure(figsize=(3, 3))
 axes = ppl.axes(projection='3d')

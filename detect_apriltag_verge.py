@@ -51,22 +51,27 @@ def getCamera3D(rvec, tvec):
 
 
 npz_file = "calibration.npz"
-tagsize = 45.3
+tagsize = 75
 family = "tagStandard52h13"
 camera = 0
 ids = [7, 57]
 # objectPoints = {7:np.array([[0., 0., 0.], [tagsize, 0., 0.], [tagsize, tagsize, 0.], [0., tagsize, 0.]]),
-                # 57:np.array(
-                    # [[150.0, 0., 0.], [150.0 + tagsize, 0., 0.], [150.0 + tagsize, tagsize, 0,],
-                     # [150.0, tagsize, 0]])}
+#                 57:np.array(
+#                     [[150.0, 0., 0.], [150.0 + tagsize, 0., 0.], [150.0 + tagsize, tagsize, 0,],
+#                      [150.0, tagsize, 0]])}
 objectPoints = {7:np.array([ [0., tagsize, 0.], [tagsize, tagsize, 0.], [tagsize, 0., 0.], [0., 0., 0.]]),
                 57:np.array([ [0., tagsize, 0.], [tagsize, tagsize, 0.], [tagsize, 0., 0.], [0., 0., 0.]])}
+
+# objectPoints = {7:np.array([[0., 0., 0.], [tagsize, 0., 0.], [tagsize, tagsize, 0.], [0., tagsize, 0.]]),
+#                 57:np.array([[0., 0., 0.], [tagsize, 0., 0.], [tagsize, tagsize, 0.], [0., tagsize, 0.]])}
 
 with np.load(npz_file) as data:
     intrinsics = data['intrinsics']
     dist_coeffs = data['dist_coeffs']
 
-vs = cv2.VideoCapture(camera)
+print ("Starting camera")
+vs = cv2.VideoCapture(camera, cv2.CAP_DSHOW)
+print ("Camera started")
 detector = apriltag.Detector(families=family)
 fig = ppl.figure(figsize=(3, 3))
 axes = ppl.axes(projection='3d')
@@ -131,7 +136,11 @@ while vs.isOpened():
         cv2.putText(image, tagid, (ptA[0], ptA[1] - 15),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-        _, rotation, translation = cv2.solvePnP(objectPoints[r.tag_id], imagePoints, intrinsics, dist_coeffs)
+        _, rotation, translation = cv2.solvePnP(objectPoints[r.tag_id], imagePoints, intrinsics, dist_coeffs, flags=cv2.SOLVEPNP_IPPE_SQUARE)
+        print (objectPoints[r.tag_id]) 
+        print (imagePoints)
+        print (translation)
+        
         # M = np.empty((4, 4))
         # M[:3, :3] = rotation
         # M[:3, 3] = [translation[0][0], translation[1][0], translation[2][0]]
@@ -145,7 +154,7 @@ while vs.isOpened():
         yraw = math.sqrt(pow((x2 - x1),2)+ pow((y2-y1),2)+ pow((z2-z1),2))
         yfilt = low_pass(yraw, yfilt_old )
         yfilt_old = yfilt
-        print(f"{yfilt:.2f}, {yraw:.2f}")
+        # print(f"{yfilt:.2f}, {yraw:.2f}")
 
     cv2.imshow("camera", image)
     if cv2.waitKey(1) & 0xFF == ord('q'):

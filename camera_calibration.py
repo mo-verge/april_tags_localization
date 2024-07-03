@@ -96,7 +96,7 @@ objp[:,:2] = np.mgrid[0:240:20,0:380:20].T.reshape(-1,2)
 objpoints = [] # 3d point in real world space
 imgpoints = [] # 2d points in image plane.
 
-images = glob.glob('calib_pics_C920/*.jpg')
+images = glob.glob('/home/mo/cam/C920_YUYV_2304_1536/backup/*.bmp')
 
 for fname in images:
     img = cv.imread(fname)

@@ -1,3 +1,5 @@
+import sys
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as ppl
@@ -51,7 +53,7 @@ def getCamera3D(rvec, tvec):
 
 
 npz_file = "calibration.npz"
-tagsize = 75
+tagsize = 45
 family = "tagStandard52h13"
 camera = 0
 ids = [7, 57]
@@ -70,33 +72,17 @@ with np.load(npz_file) as data:
     dist_coeffs = data['dist_coeffs']
 
 print ("Starting camera")
-vs = cv2.VideoCapture(camera, cv2.CAP_DSHOW)
+vs = cv2.VideoCapture(camera)
 print ("Camera started")
 detector = apriltag.Detector(families=family)
-fig = ppl.figure(figsize=(3, 3))
-axes = ppl.axes(projection='3d')
-axes.set_xlabel('X (mm)')
-axes.set_ylabel('Y (mm)')
-axes.set_zlabel('Z (mm)')
 
-for tagID, objectPoint in objectPoints.items():
-    axes.scatter3D(objectPoint[0, 0], objectPoint[0, 1], objectPoint[0, 2], '-k', c='blue')
+vs.set(cv2.CAP_PROP_FOURCC, -1)
+# vs.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
+vs.set(cv2.CAP_PROP_FRAME_WIDTH, 2304)
+vs.set(cv2.CAP_PROP_FRAME_HEIGHT, 1536)
 
-    axes.plot3D((objectPoint[0, 0], objectPoint[1, 0]), (objectPoint[0, 1], objectPoint[1, 1]),
-                (objectPoint[0, 2], objectPoint[1, 2]), '-g')
-    axes.plot3D((objectPoint[1, 0], objectPoint[2, 0]), (objectPoint[1, 1], objectPoint[2, 1]),
-                (objectPoint[1, 2], objectPoint[2, 2]), '-g')
-    axes.plot3D((objectPoint[2, 0], objectPoint[3, 0]), (objectPoint[2, 1], objectPoint[3, 1]),
-                (objectPoint[2, 2], objectPoint[3, 2]), '-g')
-    axes.plot3D((objectPoint[3, 0], objectPoint[0, 0]), (objectPoint[3, 1], objectPoint[0, 1]),
-                (objectPoint[3, 2], objectPoint[0, 2]), '-g')
 
-camera_points = []
 
-# vs.set(cv2.CAP_PROP_FOURCC, -1)
-vs.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-vs.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-vs.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 while vs.isOpened():
     lines = []
     ret, image = vs.read()
@@ -129,7 +115,7 @@ while vs.isOpened():
         cv2.line(image, ptD, ptA, (0, 255, 0), 2)
 
         # draw the left-down (x, y)-coordinates of the AprilTag
-        cv2.circle(image, ptA, 5, (255, 0, 0), -1)
+        cv2.circle(image, ptD, 5, (255, 0, 0), -1)
 
         # draw the tag id on the image
         tagid = "tag_id = " + str(r.tag_id)
@@ -137,10 +123,10 @@ while vs.isOpened():
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         _, rotation, translation = cv2.solvePnP(objectPoints[r.tag_id], imagePoints, intrinsics, dist_coeffs, flags=cv2.SOLVEPNP_IPPE_SQUARE)
-        print (objectPoints[r.tag_id]) 
-        print (imagePoints)
-        print (translation)
-        
+        # print (objectPoints[r.tag_id])
+        # print (imagePoints)
+        # print (translation)
+
         # M = np.empty((4, 4))
         # M[:3, :3] = rotation
         # M[:3, 3] = [translation[0][0], translation[1][0], translation[2][0]]
@@ -154,7 +140,7 @@ while vs.isOpened():
         yraw = math.sqrt(pow((x2 - x1),2)+ pow((y2-y1),2)+ pow((z2-z1),2))
         yfilt = low_pass(yraw, yfilt_old )
         yfilt_old = yfilt
-        # print(f"{yfilt:.2f}, {yraw:.2f}")
+        print(f"{yfilt:.2f}, {yraw:.2f}")
 
     cv2.imshow("camera", image)
     if cv2.waitKey(1) & 0xFF == ord('q'):

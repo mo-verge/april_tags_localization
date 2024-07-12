@@ -96,9 +96,10 @@ objp[:,:2] = np.mgrid[0:240:20,0:380:20].T.reshape(-1,2)
 objpoints = [] # 3d point in real world space
 imgpoints = [] # 2d points in image plane.
 
-images = glob.glob('/home/mo/cam/C920_YUYV_2304_1536/backup/*.bmp')
+images = glob.glob('calibs/*.bmp')
 
 for fname in images:
+    print (fname)
     img = cv.imread(fname)
     gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 

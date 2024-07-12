@@ -1,10 +1,13 @@
 import sys
+import time
 
 import cv2
 import numpy as np
 import matplotlib.pyplot as ppl
 import pupil_apriltags as apriltag
 import math
+from picamera2 import Picamera2
+from libcamera import controls
 
 def PolyArea2D(pts):
     l = np.hstack([pts, np.roll(pts, -1, axis=0)])
@@ -72,23 +75,28 @@ with np.load(npz_file) as data:
     dist_coeffs = data['dist_coeffs']
 
 print ("Starting camera")
-vs = cv2.VideoCapture(camera)
+picam2 = Picamera2()
+
+
+config = picam2.create_still_configuration()
+config["size"] = picam2.sensor_resolution
+config["raw"]["size"] = picam2.sensor_resolution
+picam2.configure(config)
+picam2.start()
+
+picam2.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": 2.0})
+time.sleep(1)
+# # picam2.set_controls({"AfMode": controls.AfModeEnum.Auto})
+print(picam2.camera_controls['LensPosition'])
+print(picam2.capture_metadata()['LensPosition'])
+print (picam2.sensor_resolution)
 print ("Camera started")
 detector = apriltag.Detector(families=family)
 
-vs.set(cv2.CAP_PROP_FOURCC, -1)
-# vs.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-vs.set(cv2.CAP_PROP_FRAME_WIDTH, 2304)
-vs.set(cv2.CAP_PROP_FRAME_HEIGHT, 1536)
-
-
-
-while vs.isOpened():
+while True:
     lines = []
-    ret, image = vs.read()
-    if not ret:
-        break
 
+    image = picam2.capture_array("main")
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     results = detector.detect(gray)
     coord_fusion = []
@@ -138,13 +146,11 @@ while vs.isOpened():
         x1,y1,z1 = cameras[7]
         x2,y2,z2 = cameras[57]
         yraw = math.sqrt(pow((x2 - x1),2)+ pow((y2-y1),2)+ pow((z2-z1),2))
-        yfilt = low_pass(yraw, yfilt_old )
-        yfilt_old = yfilt
-        print(f"{yfilt:.2f}, {yraw:.2f}")
+        print(f"{yraw:.4f}")
 
+    # small  = cv2.resize(image, (0,0), fx=0.2, fy=0.2)
     cv2.imshow("camera", image)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-vs.release()
 cv2.destroyAllWindows()

@@ -16,13 +16,14 @@ config["raw"]["size"] = picam2.sensor_resolution
 picam2.configure(config)
 picam2.start()
 
-picam2.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": 2.0})
+picam2.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": 0.0})
 time.sleep(1)
-# # picam2.set_controls({"AfMode": controls.AfModeEnum.Auto})
+# picam2.set_controls({"AfMode": controls.AfModeEnum.Auto})
 print(picam2.camera_controls['LensPosition'])
 print(picam2.capture_metadata()['LensPosition'])
 print (picam2.sensor_resolution)
 
+time.sleep(1)
 if os.system("ls calibs"):
     os.system("mkdir calibs")
 

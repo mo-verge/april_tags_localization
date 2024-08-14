@@ -78,14 +78,27 @@ print ("Starting camera")
 picam2 = Picamera2()
 
 
-config = picam2.create_still_configuration()
-config["size"] = picam2.sensor_resolution
-config["raw"]["size"] = picam2.sensor_resolution
+# config = picam2.create_still_configuration()
+# config["size"] = picam2.sensor_resolution
+# config["raw"]["size"] = picam2.sensor_resolution
+# config = picam2.create_video_configuration(raw={"format": 'SGBRG10', 'size': picam2.sensor_resolution})
+config = picam2.create_video_configuration(raw={"format": 'SGBRG10', 'size': (2304, 1296)})
+
+# encoder = Encoder()
+
+# picam2.configure(config)
+# picam2.encode_stream_name = "raw"
+# picam2.start_recording(encoder, 'test.raw', pts='timestamp.txt')
+# picam2.start()
+
+# picam2 = Picamera2()
+# video_config = picam2.create_video_configuration()
 picam2.configure(config)
+
 picam2.start()
 
-picam2.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": 2.0})
-time.sleep(1)
+picam2.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": 0.0})
+time.sleep(5)
 # # picam2.set_controls({"AfMode": controls.AfModeEnum.Auto})
 print(picam2.camera_controls['LensPosition'])
 print(picam2.capture_metadata()['LensPosition'])
@@ -93,12 +106,14 @@ print (picam2.sensor_resolution)
 print ("Camera started")
 detector = apriltag.Detector(families=family)
 
+
 while True:
     lines = []
 
+    curr = time.time()
     image = picam2.capture_array("main")
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    results = detector.detect(gray)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    results = detector.detect(image)
     coord_fusion = []
     angle_fusion = []
     areas = []
@@ -148,9 +163,11 @@ while True:
         yraw = math.sqrt(pow((x2 - x1),2)+ pow((y2-y1),2)+ pow((z2-z1),2))
         print(f"{yraw:.4f}")
 
-    # small  = cv2.resize(image, (0,0), fx=0.2, fy=0.2)
-    cv2.imshow("camera", image)
+    small  = cv2.resize(image, (0,0), fx=0.2, fy=0.2)
+    cv2.imshow("camera", small)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+    print(time.time() - curr)
 
 cv2.destroyAllWindows()
+

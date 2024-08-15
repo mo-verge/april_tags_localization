@@ -84,7 +84,9 @@ config["raw"]["size"] = picam2.sensor_resolution
 picam2.configure(config)
 picam2.start()
 
-picam2.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": 2.0})
+picam2.set_controls({
+    "NoiseReductionMode": controls.draft.NoiseReductionModeEnum.HighQuality,
+    "AfMode": controls.AfModeEnum.Manual, "LensPosition": 0.0})
 time.sleep(1)
 # # picam2.set_controls({"AfMode": controls.AfModeEnum.Auto})
 print(picam2.camera_controls['LensPosition'])
@@ -117,17 +119,17 @@ while True:
         areas.append((PolyArea2D(imagePoints)))
 
         # draw the bounding box of the AprilTag detection
-        cv2.line(image, ptA, ptB, (0, 255, 0), 2)
-        cv2.line(image, ptB, ptC, (0, 255, 0), 2)
-        cv2.line(image, ptC, ptD, (0, 255, 0), 2)
-        cv2.line(image, ptD, ptA, (0, 255, 0), 2)
+        cv2.line(gray, ptA, ptB, (0, 255, 0), 2)
+        cv2.line(gray, ptB, ptC, (0, 255, 0), 2)
+        cv2.line(gray, ptC, ptD, (0, 255, 0), 2)
+        cv2.line(gray, ptD, ptA, (0, 255, 0), 2)
 
         # draw the left-down (x, y)-coordinates of the AprilTag
-        cv2.circle(image, ptD, 5, (255, 0, 0), -1)
+        cv2.circle(gray, ptD, 5, (255, 0, 0), -1)
 
         # draw the tag id on the image
         tagid = "tag_id = " + str(r.tag_id)
-        cv2.putText(image, tagid, (ptA[0], ptA[1] - 15),
+        cv2.putText(gray, tagid, (ptA[0], ptA[1] - 15),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         _, rotation, translation = cv2.solvePnP(objectPoints[r.tag_id], imagePoints, intrinsics, dist_coeffs, flags=cv2.SOLVEPNP_IPPE_SQUARE)
@@ -148,8 +150,8 @@ while True:
         yraw = math.sqrt(pow((x2 - x1),2)+ pow((y2-y1),2)+ pow((z2-z1),2))
         print(f"{yraw:.4f}")
 
-    # small  = cv2.resize(image, (0,0), fx=0.2, fy=0.2)
-    cv2.imshow("camera", image)
+    small  = cv2.resize(gray, (0,0), fx=0.7, fy=0.7)
+    cv2.imshow("camera", small)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 

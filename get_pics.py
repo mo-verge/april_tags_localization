@@ -13,16 +13,25 @@ picam2 = Picamera2()
 # config = picam2.create_still_configuration()
 # config["size"] = picam2.sensor_resolution
 # config["raw"]["size"] = picam2.sensor_resolution
-config = picam2.create_video_configuration(raw={"format": 'SGBRG10', 'size': (2304, 1296)})
+config = picam2.create_video_configuration(
+    raw={"format": 'SGBRG10', 'size': (2304, 1296)},
+    main={'size': (2304, 1296)},
+    buffer_count = 4
+)
 picam2.configure(config)
 picam2.start()
 
 picam2.set_controls({
-    # "NoiseReductionMode": controls.draft.NoiseReductionModeEnum.HighQuality,
-    "AfMode": controls.AfModeEnum.Manual, "LensPosition": 0.0})
+    "NoiseReductionMode": controls.draft.NoiseReductionModeEnum.HighQuality,
+    # "AeEnable": False,
+    "AfMode": controls.AfModeEnum.Manual,
+    "ExposureTime" : 200,
+    "LensPosition": 0.0})
 time.sleep(5)
 # # picam2.set_controls({"AfMode": controls.AfModeEnum.Auto})
 print(picam2.camera_controls['LensPosition'])
+print(picam2.camera_controls['Brightness'])
+print(picam2.camera_controls['ExposureTime'])
 print(picam2.capture_metadata()['LensPosition'])
 print (picam2.sensor_resolution)
 
@@ -30,12 +39,13 @@ if os.system("ls calibs"):
     os.system("mkdir calibs")
 
 rgb = picam2.capture_array("main")
+print(rgb.shape[:2])
 gray = cv2.cvtColor(rgb, cv2.COLOR_BGR2GRAY)
 # cv2.imshow("Camera", rgb)
 now = datetime.now()
 dt_string = now.strftime("%d_%m_%Y_%H_%M_%S")
 calibFileName = f"calibs/calib_image_{dt_string}.bmp"
 cv2.imwrite(calibFileName, gray)
-# os.system(f"gpicview {calibFileName}")
+os.system(f"gpicview {calibFileName}")
 
 
